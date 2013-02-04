@@ -4,20 +4,21 @@ from decimal import Decimal
 class Transaction:
     def __init__(self, amount, date, payee):
         # minimal set of attributes
+        self.tid = None
         self.amount = Decimal(amount)
         self.date = date
         assert(type(self.date) is datetime.datetime)
         self.payee = payee
 
-        # misc supplementary info
-        self.bank_memo = None
-        self.bank_id = None
-        self.trn_type = None
-
         # classification
         self.category = None
         # user comment
         self.comment = None
+
+        # misc supplementary info
+        self.bank_memo = None
+        self.bank_id = None
+        self.trn_type = None
 
     def __str__(self):
         return "{:8} @ {} to: {}".format(self.amount, self.date, self.payee)
