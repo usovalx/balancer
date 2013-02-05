@@ -1,8 +1,6 @@
 #!/usr/bin/python2
 
 import StringIO
-import bz2
-import os.path
 import sys
 import sqlite3
 
@@ -23,45 +21,38 @@ def main(argv):
         say("Importing {!r}", fname)
 
         try:
-            raw_data = file(fname).read()
-        except IOError as e:
-            err("can't read {!r}: {}", fname, e)
-            continue
-
-        # FIXME: hsbc_statement only for now
-        try:
-            import_data = parser_hsbc.parse_statement(raw_data)
+            # FIXME: hsbc_statement only for now
+            import_info, import_data = parser_hsbc.parse_statement(fname)
         except Exception as e:
             err("can't parse document {!r}: {}", fname, e)
             continue
 
-        blob_name = os.path.basename(fname) + ".bz2"
-        blob_data = bz2.compress(raw_data)
-
         # get accounts from DB or create a new ones
-        for idx, (acc_num, _) in enumerate(import_data):
+        for idx, (acc_num, txns) in enumerate(import_data):
             acc = get_or_create_account(db, acc_num)
+            import_data[idx] = (acc, txns)
+
+        # insert all this stuff into database
+        db.save_import(import_info, import_data)
 
 def get_or_create_account(db, num):
     acc = db.get_account(num)
+    if acc:
+        return acc
 
-    if acc is None:
-        say("Account {} isn't registered, create new one?", num)
-        r = minput('[Y/n] ', isin(['', 'y', 'Y', 'n', 'N']))
-        if r in ['', 'y', 'Y']:
-            while True:
-                name = minput('Account name: ', nonempty)
-                nick = minput('Shorter nick for convenience: ', nonempty)
-                try:
-                    acc = db.new_account(btypes.Account(num, name, nick))
-                    break
-                except sqlite3.IntegrityError as e:
-                    err(e)
-        else:
-            # FIXME: use different account
-            raise Error('bad boy')
-
-    return acc
+    say("Account {} isn't known, create new one?", num)
+    r = minput('[Y/n] ', isin(['', 'y', 'Y', 'n', 'N']))
+    if r in ['', 'y', 'Y']:
+        while True:
+            nick = minput('Short (unique) nick: ', nonempty)
+            name = minput('Descriptive name: ', nonempty)
+            try:
+                return db.new_account(btypes.Account(num, nick, name))
+            except sqlite3.IntegrityError as e:
+                err(e)
+    else:
+        # FIXME: use different account
+        raise Error('bad boy')
 
 def usage():
     print("Usage: import <file>")

@@ -1,5 +1,10 @@
-from . import btypes
+import bz2
+import datetime
+import os.path
 import re
+from bs4 import BeautifulSoup
+from dateutil.parser import parse as parse_date
+from . import btypes
 
 def textByLabel(doc, label):
     """Some of the data we need is labelled text"""
@@ -9,19 +14,10 @@ def textByLabel(doc, label):
     assert(len(l) == 1)
     return l[0].find_next_sibling('div', 'hsbcTextRight').text.strip()
 
-def parse_statement(raw_data):
+def parse_statement(fname):
     """Scrape account details & transaction details from HSBC html-statement"""
-    from bs4 import BeautifulSoup
-    from dateutil.parser import parse as parse_date
-
+    raw_data = file(fname).read()
     doc = BeautifulSoup(raw_data)
-
-    # statement data is in the table
-    table = doc.find('table', attrs={'summary': re.compile('statement')})
-    header = map(lambda h: h.text.strip(), table.thead('th'))
-    data = []
-    for row in table.tbody('tr'):
-        data.append(map(lambda c: c.text.strip(), row('td')))
 
     # account number
     acc_num = doc.find('div', 'hsbcAccountNumber').text.strip()
@@ -29,6 +25,13 @@ def parse_statement(raw_data):
 
     # statement date
     st_date = parse_date(textByLabel(doc, 'Statement date'))
+
+    # table with transactions
+    table = doc.find('table', attrs={'summary': re.compile('statement')})
+    header = map(lambda h: h.text.strip(), table.thead('th'))
+    data = []
+    for row in table.tbody('tr'):
+        data.append(map(lambda c: c.text.strip(), row('td')))
 
     # now we need to parse all that stuff and convert it into well-formatted data
     # first few asserts to ensure table header is what we expect it to be
@@ -54,7 +57,14 @@ def parse_statement(raw_data):
         if t[5] != '':
             trns.append(balance(date, t))
 
-    return [(acc_num, trns)]
+    # finally create an import description
+    import_info = btypes.ImportInfo(
+            datetime.datetime.now(),
+            'HSBC statement from {} for {}'.format(st_date.date(), acc_num),
+            os.path.basename(fname) + ".bz2",
+            bz2.compress(raw_data))
+
+    return import_info, [(acc_num, trns)]
 
 
 #def parse_ofx(file_name):
