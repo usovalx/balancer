@@ -4,11 +4,12 @@ from decimal import Decimal
 class Transaction:
     def __init__(self, amount, date, payee):
         # minimal set of attributes
-        self.tid = None
+        self.id = None
         self.amount = Decimal(amount)
         self.date = date
         assert(type(self.date) is datetime.datetime)
         self.payee = payee
+        self.import = None
 
         # classification
         self.category = None
@@ -43,11 +44,9 @@ class Account:
         self.number = str(number)
 
         # various misc info about account
-        self.bank = None
         self.name = None
         self.nick = None
-        self.iban = None
-        self.bic  = None
+        self.description = None
 
     def __str__(self):
         return self.number
