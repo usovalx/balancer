@@ -45,6 +45,7 @@ _imports_schema = [
         ('id', 'integer', 'primary key'),
         ('date', 'datetime not null', ''),
         ('description', 'varchar', ''),
+        ('raw_data_name', 'varchar', ''),
         ('raw_data', 'blob', ''),
         ]
 
@@ -103,11 +104,12 @@ def open_db(path):
                 "where type='table' and name='_balancer_version'"
         initialized = True if con.execute(req).fetchone() else False
 
-        if initialized:
-            v = con.execute("select max(Version) from _balancer_version").fetchone()
-            assert(v[0] == _schema_version)
-        else:
+        if not initialized:
             _init_db(con)
+
+        ver = con.execute("select max(version) from _balancer_version").fetchone()
+        if len(ver) != 1 or ver[0] != _schema_version:
+            raise Exception('Database schema incomplete or has wrong version number')
 
         return Db(con)
 
@@ -115,4 +117,8 @@ class Db:
     def __init__(self, con):
         self.con = con
         con.execute('PRAGMA foreign_keys=ON') 
+
+    def get_account(self, number):
+        # FIXME
+        return None
 

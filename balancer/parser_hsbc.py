@@ -1,6 +1,5 @@
-#!/usr/bin/python2
+from . import btypes
 import re
-from balancer import btypes
 
 def textByLabel(doc, label):
     """Some of the data we need is labelled text"""
@@ -10,12 +9,12 @@ def textByLabel(doc, label):
     assert(len(l) == 1)
     return l[0].find_next_sibling('div', 'hsbcTextRight').text.strip()
 
-def parse_statement(file_name):
+def parse_statement(raw_data):
     """Scrape account details & transaction details from HSBC html-statement"""
     from bs4 import BeautifulSoup
     from dateutil.parser import parse as parse_date
 
-    doc = BeautifulSoup(file(file_name))
+    doc = BeautifulSoup(raw_data)
 
     # statement data is in the table
     table = doc.find('table', attrs={'summary': re.compile('statement')})
@@ -58,29 +57,29 @@ def parse_statement(file_name):
     return [(acc_num, trns)]
 
 
-def parse_ofx(file_name):
-    from ofxparse import OfxParser
-    # FIXME: in python 3 moved to html.parser 
-    from HTMLParser import HTMLParser
+#def parse_ofx(file_name):
+    #from ofxparse import OfxParser
+    ## FIXME: in python 3 moved to html.parser 
+    #from HTMLParser import HTMLParser
 
-    data = OfxParser.parse(file(file_name))
-    parser = HTMLParser()
+    #data = OfxParser.parse(file(file_name))
+    #parser = HTMLParser()
 
-    acc_num = data.account.number
-    trns = []
-    for t in data.account.statement.transactions:
-        trn = btypes.Transaction(t.amount, t.date, parser.unescape(t.payee))
-        trn.bank_memo = parser.unescape(t.memo)
-        trn.bank_id = t.id
-        trn.trn_type = t.type
-        trns.append(trn)
+    #acc_num = data.account.number
+    #trns = []
+    #for t in data.account.statement.transactions:
+        #trn = btypes.Transaction(t.amount, t.date, parser.unescape(t.payee))
+        #trn.bank_memo = parser.unescape(t.memo)
+        #trn.bank_id = t.id
+        #trn.trn_type = t.type
+        #trns.append(trn)
 
-    # just for better readability
-    trns.reverse()
+    ## just for better readability
+    #trns.reverse()
 
-    # guess -- balance is for the final date
-    trns.append(btypes.Balance(
-        data.account.statement.balance,
-        data.account.statement.end_date))
+    ## guess -- balance is for the final date
+    #trns.append(btypes.Balance(
+        #data.account.statement.balance,
+        #data.account.statement.end_date))
 
-    return [(acc_num, trns)]
+    #return [(acc_num, trns)]
