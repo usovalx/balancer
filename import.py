@@ -1,10 +1,8 @@
 #!/usr/bin/python2
 
-import StringIO
 import sys
-import sqlite3
-
-from balancer import db as balancer_db, btypes, parser_hsbc
+import sqlalchemy.exc
+from balancer import db as balancer_db, schema, parser_hsbc
 
 def main(argv):
     if len(argv) == 0:
@@ -12,7 +10,7 @@ def main(argv):
         sys.exit(1)
 
     try:
-        db = balancer_db.open_db('t.db')
+        db = balancer_db.Db('t.db')
     except Exception as e:
         err("can't open database: {}", e)
         sys.exit(1)
@@ -27,16 +25,23 @@ def main(argv):
             err("can't parse document {!r}: {}", fname, e)
             continue
 
-        # get accounts from DB or create a new ones
-        for idx, (acc_num, txns) in enumerate(import_data):
+        # collate all data into single import
+        # on the way, we need to find(create) account record for it
+        for acc_num, txns, balances in import_data:
             acc = get_or_create_account(db, acc_num)
-            import_data[idx] = (acc, txns)
+            for t in txns:
+                t.account = acc
+                import_info.transactions.append(t)
+            for b in balances:
+                b.account = acc
+                import_info.balances.append(b)
 
-        # insert all this stuff into database
-        db.save_import(import_info, import_data)
+        db.add(import_info)
+        db.commit()
+
 
 def get_or_create_account(db, num):
-    acc = db.get_account(num)
+    acc = db.query(schema.Account).filter_by(number = num).first()
     if acc:
         return acc
 
@@ -47,15 +52,17 @@ def get_or_create_account(db, num):
             nick = minput('Short (unique) nick: ', nonempty)
             name = minput('Descriptive name: ', nonempty)
             try:
-                return db.new_account(btypes.Account(num, nick, name))
-            except sqlite3.IntegrityError as e:
+                acc = schema.Account(number = num, nick = nick, name = name)
+                db.add(acc)
+                return acc
+            except sqlalchemy.exc.IntegrityError as e:
                 err(e)
     else:
         # FIXME: use different account
         raise Error('bad boy')
 
 def usage():
-    print("Usage: import <file>")
+    print("Usage: import <file> [<file> ...]")
 
 def minput(prompt, stop_fcn):
     while True:

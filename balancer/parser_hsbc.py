@@ -4,7 +4,8 @@ import os.path
 import re
 from bs4 import BeautifulSoup
 from dateutil.parser import parse as parse_date
-from . import btypes
+from decimal import Decimal
+from . import schema
 
 def textByLabel(doc, label):
     """Some of the data we need is labelled text"""
@@ -41,30 +42,29 @@ def parse_statement(fname):
 
     def balance(date, row):
         assert(row[5] != '')
-        amount = '-' + t[5] if t[6] == 'D' else t[5]
-        return btypes.Balance(amount, date)
+        balance = '-' + t[5] if t[6] == 'D' else t[5]
+        return schema.Balance(balance = Decimal(balance), date = date)
 
     trns = []
+    balances = []
     for t in data:
         date = parse_date(t[0], default=st_date)
         if t[1] == '':
-            trns.append(balance(date, t))
+            balances.append(balance(date, t))
             continue
         amount = '-' + t[3] if t[3] != '' else t[4]
-        trn = btypes.Transaction(amount, date, t[2])
-        trn.trn_type = t[1]
-        trns.append(trn)
+        trns.append(schema.Transaction(amount = Decimal(amount), date = date, payee = t[2], trn_type = t[1]))
         if t[5] != '':
-            trns.append(balance(date, t))
+            balances.append(balance(date, t))
 
     # finally create an import description
-    import_info = btypes.ImportInfo(
-            datetime.datetime.now(),
-            'HSBC statement from {} for {}'.format(st_date.date(), acc_num),
-            os.path.basename(fname) + ".bz2",
-            bz2.compress(raw_data))
+    import_info = schema.ImportInfo(
+            description = 'HSBC statement from {} for account {}'.format(st_date.date(), acc_num),
+            raw_data = schema.RawData(
+                name = os.path.basename(fname) + '.bz2',
+                data = bz2.compress(raw_data)))
 
-    return import_info, [(acc_num, trns)]
+    return import_info, [(acc_num, trns, balances)]
 
 
 #def parse_ofx(file_name):
