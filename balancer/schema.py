@@ -2,6 +2,17 @@ import decimal
 import sqlalchemy as s
 from sqlalchemy.ext.declarative import declarative_base
 
+# TODO:
+# * see if non-declarative definition of tables + classes is more compact
+# * read more about Column and relationship attributes
+#   * lazy relationships
+#   * query-based relationsips
+#   * noload relations
+#   * cascade
+#   * passive_delete
+# * figure out how create and configure backup tables
+# * ?? use changesets to track units of changes
+
 _schema = declarative_base()
 
 # s doesn't properly handle conversions of decimal values
@@ -23,8 +34,6 @@ class Transaction(_schema):
     account_id = s.Column(s.Integer, s.ForeignKey('accounts.id'), nullable=False)
     account = s.orm.relationship('Account')
     amount = s.Column(_Decimal, nullable=False)
-    # FIXME: date or datetime ?
-    # do any of my data sources have timestamps?
     date = s.Column(s.Date, nullable=False)
     payee = s.Column(s.String, nullable=False)
     import_info_id = s.Column(s.Integer, s.ForeignKey('import_info.id'), nullable=False)
@@ -38,6 +47,8 @@ class Transaction(_schema):
     bank_memo = s.Column(s.String)
     bank_id = s.Column(s.String)
     trn_type = s.Column(s.String)
+    note_id = s.Column(s.Integer, s.ForeignKey('notes.id'))
+    note = s.orm.relationship('Note')
 
     def __repr__(self):
         return '<Transaction({}, {}, {})>'.format(self.amount, self.date, self.payee)
@@ -65,7 +76,8 @@ class Account(_schema):
     number = s.Column(s.String, nullable=False, unique=True)
     nick = s.Column(s.String, unique=True)
     name = s.Column(s.String)
-    comments = s.Column(s.String)
+    note_id = s.Column(s.Integer, s.ForeignKey('notes.id'))
+    note = s.orm.relationship('Note')
 
     transactions = s.orm.relationship('Transaction')
     balances = s.orm.relationship('Balance')
@@ -79,6 +91,8 @@ class Category(_schema):
 
     id = s.Column(s.Integer, primary_key=True)
     category = s.Column(s.String, nullable=False, unique=True)
+    note_id = s.Column(s.Integer, s.ForeignKey('notes.id'))
+    note = s.orm.relationship('Note')
 
     transactions = s.orm.relationship('Transaction')
 
@@ -112,6 +126,12 @@ class RawData(_schema):
     def __repr__(self):
         return '<RawData({}, {}b)>'.format(self.name, len(self.data))
 
+class Note(_schema):
+    """Notes storage for all tables which need it"""
+    __tablename__ = 'notes'
+
+    id = s.Column(s.Integer, primary_key=True)
+    note = s.Column(s.String)
 
 backup = s.Table('backup', _schema.metadata,
         s.Column('id', s.Integer, primary_key=True))

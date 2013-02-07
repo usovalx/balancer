@@ -25,7 +25,7 @@ def parse_statement(fname):
     acc_num = filter(lambda c: c.isdigit(), acc_num)
 
     # statement date
-    st_date = parse_date(textByLabel(doc, 'Statement date'))
+    st_date = parse_date(textByLabel(doc, 'Statement date')).date()
 
     # table with transactions
     table = doc.find('table', attrs={'summary': re.compile('statement')})
@@ -40,6 +40,21 @@ def parse_statement(fname):
     assert(header[0:5] == ['Date', 'Type', 'Description', 'Paid out', 'Paid in'])
     assert(re.match('Balance', header[5]))
 
+    def get_date(txt):
+        # dates in the statement don't have year on them
+        # use st_date to fill in this gap, but be careful
+        # when dates cross new year
+        # ex: st_date = 31 Jan 2011
+        # dates: 24 Dec & 24 Jan
+        # naive parsing would extract them as Jan & Dec 2011
+        # instead of Dec 2010 & Jan 2011
+        date = parse_date(txt, default = st_date)
+        if date > st_date:
+            date = parse_date(
+                    txt,
+                    default = datetime.date(st_date.year-1, st_date.month, 1))
+        return date
+
     def balance(date, row):
         assert(row[5] != '')
         balance = '-' + t[5] if t[6] == 'D' else t[5]
@@ -48,7 +63,7 @@ def parse_statement(fname):
     trns = []
     balances = []
     for t in data:
-        date = parse_date(t[0], default=st_date)
+        date = get_date(t[0])
         if t[1] == '':
             balances.append(balance(date, t))
             continue
@@ -59,7 +74,7 @@ def parse_statement(fname):
 
     # finally create an import description
     import_info = schema.ImportInfo(
-            description = 'HSBC statement from {} for account {}'.format(st_date.date(), acc_num),
+            description = 'HSBC statement from {} for account {}'.format(st_date, acc_num),
             raw_data = schema.RawData(
                 name = os.path.basename(fname) + '.bz2',
                 data = bz2.compress(raw_data)))
