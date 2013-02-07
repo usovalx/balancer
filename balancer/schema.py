@@ -133,5 +133,5 @@ class Note(_schema):
     id = s.Column(s.Integer, primary_key=True)
     note = s.Column(s.String)
 
-backup = s.Table('backup', _schema.metadata,
-        s.Column('id', s.Integer, primary_key=True))
+#backup = s.Table('backup', _schema.metadata,
+        #s.Column('id', s.Integer, primary_key=True))
