@@ -12,9 +12,13 @@ class Main(QtGui.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.db = todo.initDB()
+        self.ui.editor.hide()
 
-        for task in self.db.query(todo.Task):
+        self.db = todo.initDB()
+        # FIXME: dirty
+        self.ui.editor.db = self.db
+
+        for task in self.db.query(todo.Task).order_by(todo.Task.id):
             tags = ', '.join([t.name for t in task.tags])
             
             item = QtGui.QTreeWidgetItem([task.text, str(task.date), tags])
@@ -29,19 +33,40 @@ class Main(QtGui.QMainWindow):
         self.db.commit()
 
     def on_actionDelete_task_triggered(self, checked=None):
-        if checked is not None:
-            i = self.ui.list.currentItem()
-            
-            if not i:
-                return
+        if checked is None: return
+        i = self.ui.list.currentItem()
+        
+        if not i:
+            return
 
-            self.db.delete(i.task)
-            self.ui.list.takeTopLevelItem(self.ui.list.indexOfTopLevelItem(i))
-            self.db.commit()
+        self.db.delete(i.task)
+        self.ui.list.takeTopLevelItem(self.ui.list.indexOfTopLevelItem(i))
+        self.db.commit()
 
     def on_list_currentItemChanged(self, current=None, prev=None):
-        print '=== changed: ' + str(current)
         self.ui.actionDelete_task.setEnabled(bool(current))
+
+    def on_actionNew_Task_triggered(self, checked=None):
+        if checked is None: return
+
+        task = todo.Task(text = "New task")
+
+        item = QtGui.QTreeWidgetItem([task.text, str(task.date), ''])
+        item.setCheckState(0, False)
+        item.task = task
+
+        self.ui.list.addTopLevelItem(item)
+        self.ui.list.setCurrentItem(item)
+
+        self.db.add(task)
+        self.ui.editor.edit(item)
+
+    def on_actionEdit_Task_triggered(self, checked = None):
+        if checked is None: return
+
+        item = self.ui.list.currentItem()
+        if item:
+            self.ui.editor.edit(item)
 
 
 def main():

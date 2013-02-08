@@ -30,7 +30,7 @@ _task_tags = s.Table('task_tags', _schema.metadata,
         s.Column('tag_id', s.Integer, s.ForeignKey('tags.id', ondelete='cascade')))
 
 def initDB():
-    engine = s.create_engine('sqlite:///t.db', echo=True)
+    engine = s.create_engine('sqlite:///t.db', echo=False)
 
     @s.event.listens_for(engine, 'connect')
     def enable_foreign_keys(connection, record):
