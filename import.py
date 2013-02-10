@@ -37,8 +37,13 @@ def main(argv):
                 import_info.balances.append(b)
 
         db.add(import_info)
-        db.commit()
+        db.flush()
 
+        # remove duplicate balances
+        #b1 = schema.Balance
+        #b2 = schema.s.orm.aliased(schema.Balance)
+
+        db.commit()
 
 def get_or_create_account(db, num):
     acc = db.query(schema.Account).filter_by(number = num).first()

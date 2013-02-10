@@ -43,6 +43,10 @@ class Db(object):
         """Proxy commit to session"""
         return self.session.commit()
 
+    def flush(self):
+        """Proxy flush to session"""
+        return self.session.flush()
+
     def rollback(self):
         """Proxy rollback to session"""
         return self.session.rollback()
