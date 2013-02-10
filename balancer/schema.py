@@ -62,7 +62,7 @@ class Balance(_schema):
     account = s.orm.relationship('Account')
     balance = s.Column(_Decimal, nullable=False)
     date = s.Column(s.Date, nullable=False)
-    import_id = s.Column(s.Integer, s.ForeignKey('import_info.id'), nullable=False)
+    import_info_id = s.Column(s.Integer, s.ForeignKey('import_info.id'), nullable=False)
     import_info = s.orm.relationship("ImportInfo")
 
     def __repr__(self):

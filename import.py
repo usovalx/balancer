@@ -2,6 +2,7 @@
 
 import sys
 import sqlalchemy.exc
+import sqlalchemy
 from balancer import db as balancer_db, schema, parser_hsbc
 
 def main(argv):
@@ -39,10 +40,28 @@ def main(argv):
         db.add(import_info)
         db.flush()
 
-        # remove duplicate balances
+        # delete duplicate balances
         #b1 = schema.Balance
-        #b2 = schema.s.orm.aliased(schema.Balance)
-
+        #b2 = sqlalchemy.orm.aliased(schema.Balance)
+        #c1 = db.query(b1).filter_by(import_info_id = import_info.id)\
+                #.filter(sqlalchemy.sql.exists()
+                        #.where(b1.id > b2.id)
+                        #.where(b1.account_id == b2.account_id)
+                        #.where(b1.balance == b2.balance)
+                        #.where(b1.date == b2.date)
+                        #).delete(synchronize_session=False)
+        ## delete duplicate transactions
+        #t1 = schema.Transaction
+        #t2 = sqlalchemy.orm.aliased(schema.Transaction)
+        #c2 = db.query(t1).filter_by(import_info_id = import_info.id)\
+                #.filter(sqlalchemy.sql.exists()
+                        #.where(t1.id > t2.id)
+                        #.where(t1.account_id == t2.account_id)
+                        #.where(t1.amount == t2.amount)
+                        #.where(t1.date == t2.date)
+                        #.where(t1.payee == t2.payee)
+                        #).delete(synchronize_session=False)
+        #print("Duplicates removed: {} balances and {} transactions".format(c1,c2))
         db.commit()
 
 def get_or_create_account(db, num):
