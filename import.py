@@ -1,7 +1,6 @@
 #!/usr/bin/python2
 
 import sys
-import sqlalchemy.exc
 import sqlalchemy
 from balancer import db as balancer_db, schema, parser_hsbc
 
@@ -41,15 +40,15 @@ def main(argv):
         db.flush()
 
         # delete duplicate balances
-        #b1 = schema.Balance
-        #b2 = sqlalchemy.orm.aliased(schema.Balance)
-        #c1 = db.query(b1).filter_by(import_info_id = import_info.id)\
-                #.filter(sqlalchemy.sql.exists()
-                        #.where(b1.id > b2.id)
-                        #.where(b1.account_id == b2.account_id)
-                        #.where(b1.balance == b2.balance)
-                        #.where(b1.date == b2.date)
-                        #).delete(synchronize_session=False)
+        b1 = schema.Balance
+        b2 = sqlalchemy.orm.aliased(schema.Balance)
+        c1 = db.query(b1).filter_by(import_info_id = import_info.id)\
+                .filter(sqlalchemy.sql.exists()
+                        .where(b1.id > b2.id)
+                        .where(b1.account_id == b2.account_id)
+                        .where(b1.balance == b2.balance)
+                        .where(b1.date == b2.date)
+                        ).delete(synchronize_session='fetch')
         ## delete duplicate transactions
         #t1 = schema.Transaction
         #t2 = sqlalchemy.orm.aliased(schema.Transaction)
@@ -61,7 +60,7 @@ def main(argv):
                         #.where(t1.date == t2.date)
                         #.where(t1.payee == t2.payee)
                         #).delete(synchronize_session=False)
-        #print("Duplicates removed: {} balances and {} transactions".format(c1,c2))
+        print("Duplicates removed: {} balances".format(c1))
         db.commit()
 
 def get_or_create_account(db, num):

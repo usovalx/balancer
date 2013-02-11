@@ -62,39 +62,10 @@
      </widget>
     </item>
     <item>
-     <widget class="QTreeWidget" name="transactionsList">
+     <widget class="QTreeView" name="transactionsList">
       <property name="alternatingRowColors">
        <bool>true</bool>
       </property>
-      <property name="rootIsDecorated">
-       <bool>false</bool>
-      </property>
-      <property name="uniformRowHeights">
-       <bool>true</bool>
-      </property>
-      <property name="allColumnsShowFocus">
-       <bool>true</bool>
-      </property>
-      <column>
-       <property name="text">
-        <string>amount</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>payee</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>date</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>category</string>
-       </property>
-      </column>
      </widget>
     </item>
    </layout>
