@@ -4,22 +4,7 @@ from PyQt4 import QtCore, QtGui
 from balancer import schema, db
 from balancer.window_ui import Ui_MainWindow
 
-class cacher(object):
-    def __init__(self):
-        super(cacher, self).__init__()
-        self.__cache = dict()
-
-    def get(self, typ, oid):
-        key = (typ, oid)
-        i = self.__cache.get(key)
-        if i is None:
-            i = self.db.query(typ).get(oid)
-            if i:
-                self.__cache[key] = i
-        return i
-
-# FIXME: creepy -- need to put my mixin BEFORE qt model
-class TransactionsViewModel(cacher, QtCore.QAbstractTableModel):
+class TransactionsViewModel(QtCore.QAbstractTableModel):
     def __init__(self, db):
         super(TransactionsViewModel, self).__init__()
 
@@ -60,7 +45,7 @@ class TransactionsViewModel(cacher, QtCore.QAbstractTableModel):
     def data(self, idx, role):
         if not idx.isValid() or role != QtCore.Qt.DisplayRole:
             return QtCore.QVariant()
-        t = self.get(schema.Transaction, self.tids[idx.row()])
+        t = self.db.get(schema.Transaction, self.tids[idx.row()])
         return QtCore.QVariant(unicode(getattr(t, self.cols[idx.column()])))
 
     def headerData(self, sect, orient, role):

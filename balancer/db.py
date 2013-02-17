@@ -1,9 +1,8 @@
+import random
 import sqlalchemy
-#from . import schema
-from balancer import schema
+from . import schema
 
 class Db(object):
-
     def __init__(self, db_path):
         from os import path
         self.db_uri = 'sqlite:///{}'.format(path.abspath(db_path))
@@ -20,12 +19,30 @@ class Db(object):
         # create tables
         schema._schema.metadata.create_all(self.engine)
         # FIXME: create backup tables
-        ## after_create event
+        ## after_create event ??
 
         # sqlite doesn't allow multiple concurrent sessions
         # so just create one we will use for everything
         self.SessionMk = sqlalchemy.orm.sessionmaker(bind=self.engine)
         self.session = self.SessionMk()
+
+        # entity cache
+        self.__cache = dict()
+        self.__cache_high_watermark = 600
+
+    def get(self, type_, oid):
+        """Get entity of type type_ by id"""
+        key = (type_, oid)
+        i = self.__cache.get(key)
+        if i is None:
+            i = self.session.query(type_).get(oid)
+            if i:
+                self.__cache[key] = i
+                # clean-up cache if it gets too big
+                if len(self.__cache) > self.__cache_high_watermark:
+                    for k in random.sample(self.__cache.keys(), 400):
+                        del self.__cache[k]
+        return i
 
     def query(self, *entities, **kwargs):
         """Proxy query to session"""
