@@ -2,41 +2,22 @@ from PyQt4 import QtCore, QtGui
 from . import schema
 
 class TransactionsListModel(QtGui.QStandardItemModel):
-    def __init__(self, db):
+    def __init__(self, db, filters):
         super(TransactionsListModel, self).__init__()
-
         self.db = db
-        self.__enabled_accounts = set()
-        self.__payee_filter = None
         self.__txn_ids = []
+        self.__filter = filters.getFilter(schema.Transaction)
 
-    # Event handlers for filters
-    def on_accountsChanged(self, accounts):
-        print "accts: %s" % accounts
-        self.__enabled_accounts = set(accounts)
+    def on_filtersChanged(self):
+        print "filtersChanged"
         self.updateTransactionsList()
-
-    def on_payeeChanged(self, payeeStr):
-        self.__payee_filter = '%{}%'.format(unicode(payeeStr)) if payeeStr else None
-        self.updateTransactionsList()
-
-    def applyFilters(self, query):
-        if self.__enabled_accounts:
-            query = query.filter(schema.Transaction.account_id.in_(self.__enabled_accounts))
-        else:
-            query = query.filter(schema.Transaction.account_id == -1)
-
-        if self.__payee_filter:
-            query = query.filter(schema.Transaction.payee.like(self.__payee_filter))
-
-        return query
 
     def updateTransactionsList(self):
         q = self.db.query(schema.Transaction.id)
-        q = self.applyFilters(q)
+        q = self.__filter(q)
         q = q.order_by(schema.Transaction.date.desc(), schema.Transaction.payee)
         self.__txn_ids = q.all()
-        print "total: %d " % len(self.__txn_ids)
+        print "total txns: %d " % len(self.__txn_ids)
         self.clear()
 
     def canFetchMore(self, index):
@@ -52,6 +33,6 @@ class TransactionsListModel(QtGui.QStandardItemModel):
 
     def formatRow(self, txn):
         r = [QtGui.QStandardItem(unicode(x))
-                for x in [txn.date, txn.payee, txn.amount, txn.account_id]]
+                for x in [txn.date, txn.payee, txn.amount, txn.account.nick]]
         return r
 

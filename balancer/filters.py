@@ -5,9 +5,7 @@ from .filter_ui import Ui_filters
 
 class FiltersWidget(QtGui.QWidget):
     # my signals
-    selectedAccountsChanged = QtCore.pyqtSignal(set)
-    payeeFilterChanged = QtCore.pyqtSignal(unicode)
-    dateFilterChanged = QtCore.pyqtSignal(object, object)
+    filtersChanged = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super(FiltersWidget, self).__init__(parent)
@@ -41,10 +39,21 @@ class FiltersWidget(QtGui.QWidget):
         @self.ui.payeeFilter.editingFinished.connect
         def handle():
             x = unicode(self.ui.payeeFilter.text())
+            x = x if x else None
             if self.__payeeFilter != x:
                 self.__payeeFilter = x
-                self.payeeFilterChanged.emit(x)
+                self.filtersChanged.emit()
 
+    def getFilter(self, obj):
+        def f(query):
+            if self.__selectedAccounts:
+                query = query.filter(obj.account_id.in_(self.__selectedAccounts))
+            else:
+                query = query.filter(obj.account_id == -1)
+            if self.__payeeFilter:
+                query = query.filter(obj.payee.like(self.__payeeFilter))
+            return query
+        return f
 
     def setDb(self, db):
         self.db = db
@@ -72,5 +81,5 @@ class FiltersWidget(QtGui.QWidget):
                 selected.add(itm.accnt.id)
         if selected != self.__selectedAccounts:
             self.__selectedAccounts = selected
-            self.selectedAccountsChanged.emit(selected)
+            self.filtersChanged.emit()
 

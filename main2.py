@@ -13,14 +13,16 @@ class Main(QtGui.QMainWindow):
 
         self.db = db.Db('t.db')
 
-        self.model = TransactionsListModel(self.db)
+        self.ui.filters.setDb(self.db)
+
+        self.model = TransactionsListModel(self.db, self.ui.filters)
         self.ui.transactionsList.setModel(self.model)
 
         # connect events
-        self.ui.filters.selectedAccountsChanged.connect(self.model.on_accountsChanged)
-        self.ui.filters.payeeFilterChanged.connect(self.model.on_payeeChanged)
+        self.ui.filters.filtersChanged.connect(self.model.on_filtersChanged)
 
-        self.ui.filters.setDb(self.db)
+        # load data
+        self.model.updateTransactionsList()
 
 
 if __name__ == '__main__':

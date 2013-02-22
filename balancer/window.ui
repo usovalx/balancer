@@ -68,6 +68,9 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>transactionsList</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

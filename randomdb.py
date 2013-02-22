@@ -6,6 +6,7 @@ import random
 from balancer import schema, db
 
 payees = random.sample(file('/usr/share/dict/words').readlines(), 200)
+payees = map(lambda p: p.strip(), payees)
 accts = ['11223344', '77659394', '843942342']
 accts = map(lambda n: schema.Account(number = n, nick = n), accts)
 imports = map(lambda x: schema.ImportInfo(), range(10))
